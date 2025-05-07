@@ -12,6 +12,10 @@ class Kippeihomepage extends StatelessWidget {
         color: Colors.green,  // 背景色を緑に変更
         child: Center(
           child: TextButton(
+            style: TextButton.styleFrom(
+    side: BorderSide(color: Colors.white, width: 2), // 枠線の色と太さ
+    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10), // 余白の調整（任意）
+     ),
             child: Text(
               "1ページ目に遷移する",
               style: TextStyle(

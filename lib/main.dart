@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 //import 'package:flutter_application_1/homepage.dart';
-import 'package:flutter_application_1/MainPageWidget.dart';
 import 'package:flutter_application_1/kippeihomepage.dart';
 
 void main() {
@@ -129,3 +128,4 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
