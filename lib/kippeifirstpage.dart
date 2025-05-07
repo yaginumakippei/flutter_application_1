@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:video_player/video_player.dart';
 
 class KippeifirstPage extends StatefulWidget {
   @override
@@ -11,11 +13,13 @@ class _KippeifirstPageState extends State<KippeifirstPage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   String _savedText = "";
   bool _showMedia = false;
+  Timer? _videoTimer;
 
   @override
   void dispose() {
     _controller.dispose();
     _audioPlayer.dispose();
+    _videoTimer?.cancel();
     super.dispose();
   }
 
@@ -23,13 +27,21 @@ class _KippeifirstPageState extends State<KippeifirstPage> {
     final input = _controller.text;
     setState(() {
       _savedText = input;
-      _showMedia = input == "高田健志"; // 条件をチェック
+      _showMedia = input == "高田健志";
     });
 
     if (_showMedia) {
       await _audioPlayer.play(AssetSource('audio/takada_kenshi_zanarkand.mp3'));
+
+      // 26秒後に全画面動画へ遷移
+      _videoTimer = Timer(Duration(seconds: 26), () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => FullscreenVideoPage()),
+        );
+      });
     } else {
       await _audioPlayer.stop();
+      _videoTimer?.cancel();
     }
   }
 
@@ -62,7 +74,7 @@ class _KippeifirstPageState extends State<KippeifirstPage> {
             ),
             SizedBox(height: 20),
             if (_showMedia) ...[
-              Image.asset('assets/images/takada.jpg',  width: double.infinity, height: 200),
+              Image.asset('images/takada.jpg', width: double.infinity, height: 200),
               SizedBox(height: 10),
               Text('🎵 音楽を再生中 🎵', style: TextStyle(color: Colors.white)),
             ],
@@ -73,6 +85,52 @@ class _KippeifirstPageState extends State<KippeifirstPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// 👇 ここから下が2つ目のコード（同じファイルに書く）
+
+class FullscreenVideoPage extends StatefulWidget {
+  @override
+  _FullscreenVideoPageState createState() => _FullscreenVideoPageState();
+}
+
+class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
+  late VideoPlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset('video/kenshi.mp4')
+      ..initialize().then((_) {
+        setState(() {});
+        _controller.play();
+      });
+    _controller.setLooping(true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: _controller.value.isInitialized
+            ? GestureDetector(
+                onTap: () => Navigator.pop(context), // タップで元の画面に戻る
+                child: AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio,
+                  child: VideoPlayer(_controller),
+                ),
+              )
+            : CircularProgressIndicator(),
       ),
     );
   }

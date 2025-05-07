@@ -13,6 +13,8 @@ dependencies:
     sdk: flutter  # Flutter SDK
   cupertino_icons: ^1.0.8  # iOSスタイルのアイコン
   audioplayers: ^5.2.1  # 音楽再生用パッケージ
+  video_player: ^2.7.0
+ 
 
 dev_dependencies:
   flutter_test:
@@ -24,3 +26,6 @@ flutter:
   assets:
     - assets/images/takada.jpg  # 画像ファイル
     - assets/audio/takada_kenshi_zanarkand.mp3  # 音声ファイル（引用符で囲んでいる）
+    - assets/video/kenshi.mp4
+    - assets/images/agehachouu.png
+    - assets/video/takadacho.mp4
