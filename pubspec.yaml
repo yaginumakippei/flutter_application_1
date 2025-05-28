@@ -14,6 +14,9 @@ dependencies:
   cupertino_icons: ^1.0.8  # iOSスタイルのアイコン
   audioplayers: ^5.2.1  # 音楽再生用パッケージ
   video_player: ^2.7.0
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  file_picker: ^6.1.1 # ファイル選択用
  
 
 dev_dependencies:
