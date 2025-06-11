@@ -29,9 +29,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true  # マテリアルデザインを使用
-  assets:
-    - assets/images/takada.jpg  # 画像ファイル
-    - assets/audio/takada_kenshi_zanarkand.mp3  # 音声ファイル（引用符で囲んでいる）
-    - assets/video/kenshi.mp4
-    - assets/images/agehachouu.png
-    - assets/video/takadacho.mp4
