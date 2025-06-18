@@ -7,6 +7,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 
 import 'models/entry_model.dart';
+import 'quiz_page.dart'; // クイズページを追加でインポート
 
 void main() async {
   await Hive.initFlutter();
@@ -213,6 +214,18 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text("登録一覧", style: TextStyle(fontWeight: FontWeight.bold)),
                 SizedBox(height: 10),
                 ...entries.asMap().entries.map((e) => _buildEntry(e.value, e.key)).toList(),
+
+                SizedBox(height: 30),
+                // クイズページへの遷移ボタン追加
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => QuizPage()),
+                    );
+                  },
+                  child: Text('クイズを始める'),
+                ),
               ],
             ),
           );
