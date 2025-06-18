@@ -115,34 +115,44 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildEntry(EntryModel item, int index) {
     return Card(
-      child: ListTile(
-        title: Text(item.text),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (item.image != null)
-              Padding(padding: EdgeInsets.only(top: 8), child: Image.memory(item.image!, height: 100)),
-            if (item.audio != null)
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ListTile(
+          title: Text(item.text),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (item.image != null) ...[
+                SizedBox(height: 8),
+                Image.memory(item.image!, height: 100),
+              ],
+              if (item.audio != null) ...[
+                SizedBox(height: 8),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.play_arrow),
+                  label: Text("音楽再生: ${item.audioName ?? ''}"),
+                  onPressed: () => _playAudio(item.audio!),
+                ),
+              ],
+              if (item.video != null) ...[
+                SizedBox(height: 8),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.movie),
+                  label: Text("動画再生: ${item.videoName ?? ''}"),
+                  onPressed: () => _playVideo(context, item.video!),
+                ),
+              ],
+              SizedBox(height: 8),
               ElevatedButton.icon(
-                icon: Icon(Icons.play_arrow),
-                label: Text("音楽再生: ${item.audioName ?? ''}"),
-                onPressed: () => _playAudio(item.audio!),
+                icon: Icon(Icons.delete),
+                label: Text("削除"),
+                onPressed: () async {
+                  await item.delete();
+                  setState(() {});
+                },
               ),
-            if (item.video != null)
-              ElevatedButton.icon(
-                icon: Icon(Icons.movie),
-                label: Text("動画再生: ${item.videoName ?? ''}"),
-                onPressed: () => _playVideo(context, item.video!),
-              ),
-            ElevatedButton.icon(
-              icon: Icon(Icons.delete),
-              label: Text("削除"),
-              onPressed: () async {
-                await item.delete();
-                setState(() {});
-              },
-            )
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -167,21 +177,41 @@ class _RegisterPageState extends State<RegisterPage> {
           return SingleChildScrollView(
             padding: EdgeInsets.all(16),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: _textController,
                   decoration: InputDecoration(labelText: '文字を入力'),
                 ),
+                SizedBox(height: 12),
+
                 ElevatedButton(onPressed: _pickImage, child: Text('画像を選択')),
-                if (_imageBytes != null) Image.memory(_imageBytes!, height: 100),
+                if (_imageBytes != null) ...[
+                  SizedBox(height: 8),
+                  Image.memory(_imageBytes!, height: 100),
+                ],
+                SizedBox(height: 12),
+
                 ElevatedButton(onPressed: _pickAudio, child: Text('音楽（MP3）を選択')),
-                if (_audioName != null) Text('選択された音楽: $_audioName'),
+                if (_audioName != null) ...[
+                  SizedBox(height: 8),
+                  Text('選択された音楽: $_audioName'),
+                ],
+                SizedBox(height: 12),
+
                 ElevatedButton(onPressed: _pickVideo, child: Text('動画（MP4）を選択')),
-                if (_videoName != null) Text('選択された動画: $_videoName'),
+                if (_videoName != null) ...[
+                  SizedBox(height: 8),
+                  Text('選択された動画: $_videoName'),
+                ],
                 SizedBox(height: 20),
+
                 ElevatedButton(onPressed: _register, child: Text('登録')),
+                SizedBox(height: 20),
+
                 Divider(),
                 Text("登録一覧", style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 10),
                 ...entries.asMap().entries.map((e) => _buildEntry(e.value, e.key)).toList(),
               ],
             ),
