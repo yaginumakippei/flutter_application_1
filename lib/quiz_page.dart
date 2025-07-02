@@ -1,12 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:just_audio/just_audio.dart';
-import 'dart:html' as html;
-import 'dart:typed_data';
-
-import 'models/entry_model.dart';
-import 'main.dart'; // VideoPlayerPage を使うため
+import 'package:hive/hive.dart';
+import 'models/quiz_entry_model.dart';
 
 class QuizPage extends StatefulWidget {
   @override
@@ -14,103 +9,51 @@ class QuizPage extends StatefulWidget {
 }
 
 class _QuizPageState extends State<QuizPage> {
-  final Box<EntryModel> _box = Hive.box<EntryModel>('entries');
-  final Random _random = Random();
-  AudioPlayer? _audioPlayer;
-  EntryModel? _currentEntry;
+  final _box = Hive.box<QuizEntryModel>('quiz_entries');
+  final _random = Random();
+  QuizEntryModel? _current;
+  bool _showAnswer = false;
 
-  void _loadRandomEntry() {
-    final entries = _box.values.toList();
-    if (entries.isNotEmpty) {
-      final randomEntry = entries[_random.nextInt(entries.length)];
-      setState(() {
-        _currentEntry = randomEntry;
-      });
+  void _loadNext() {
+    final list = _box.values.toList();
+    if (list.isEmpty) {
+      setState(() => _current = null);
+      return;
     }
-  }
-
-  Future<void> _playAudio(Uint8List bytes) async {
-    _audioPlayer?.dispose();
-    _audioPlayer = AudioPlayer();
-    final blob = html.Blob([bytes], 'audio/mp3');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    await _audioPlayer!.setUrl(url);
-    _audioPlayer!.play();
-  }
-
-  void _playVideo(Uint8List bytes) {
-    final blob = html.Blob([bytes], 'video/mp4');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => VideoPlayerPage(videoUrl: url)),
-    );
+    setState(() {
+      _current = list[_random.nextInt(list.length)];
+      _showAnswer = false;
+    });
   }
 
   @override
   void initState() {
     super.initState();
-    _loadRandomEntry();
-  }
-
-  @override
-  void dispose() {
-    _audioPlayer?.dispose();
-    super.dispose();
+    _loadNext();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_currentEntry == null) {
-      return Scaffold(
-        appBar: AppBar(title: Text('クイズ')),
-        body: Center(child: Text('登録データがありません')),
-      );
-    }
-
-    final entry = _currentEntry!;
     return Scaffold(
-      appBar: AppBar(title: Text('クイズ')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Text('以下のマルチメディアの内容を確認してください:', style: TextStyle(fontSize: 18)),
-            SizedBox(height: 20),
-
-            if (entry.image != null)
-              Image.memory(entry.image!, height: 150),
-
-            if (entry.audio != null)
-              ElevatedButton.icon(
-                icon: Icon(Icons.play_arrow),
-                label: Text("音楽再生: ${entry.audioName ?? ''}"),
-                onPressed: () => _playAudio(entry.audio!),
-              ),
-
-            if (entry.video != null)
-              ElevatedButton.icon(
-                icon: Icon(Icons.movie),
-                label: Text("動画再生: ${entry.videoName ?? ''}"),
-                onPressed: () => _playVideo(entry.video!),
-              ),
-
-            SizedBox(height: 30),
-            Text(
-              'この登録の内容は何ですか？',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            Text(entry.text, style: TextStyle(fontSize: 16, color: Colors.blue)),
-
-            Spacer(),
-            ElevatedButton(
-              onPressed: _loadRandomEntry,
-              child: Text('次の問題'),
-            ),
-          ],
+      appBar: AppBar(title: Text('クイズ出題')),
+      body: _current == null
+        ? Center(child: Text('クイズが登録されていません'))
+        : Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Text('問題 ${_current!.number}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              SizedBox(height: 20),
+              Text(_current!.question, style: TextStyle(fontSize: 22)),
+              SizedBox(height: 30),
+              if (_showAnswer) Text('答え: ${_current!.answer}', style: TextStyle(fontSize: 20, color: Colors.green)),
+              SizedBox(height: 10),
+              ElevatedButton(onPressed: () => setState(() => _showAnswer = true), child: Text('答えを表示')),
+              SizedBox(height: 10),
+              ElevatedButton(onPressed: _loadNext, child: Text('次の問題')),
+            ],
+          ),
         ),
-      ),
     );
   }
 }

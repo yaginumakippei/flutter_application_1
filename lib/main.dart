@@ -7,12 +7,15 @@ import 'package:just_audio/just_audio.dart';
 import 'package:video_player/video_player.dart';
 
 import 'models/entry_model.dart';
-import 'quiz_page.dart'; // クイズページを追加でインポート
+import 'models/quiz_entry_model.dart';
+import 'quiz_page.dart';
 
 void main() async {
   await Hive.initFlutter();
   Hive.registerAdapter(EntryModelAdapter());
+  Hive.registerAdapter(QuizEntryModelAdapter());
   await Hive.openBox<EntryModel>('entries');
+  await Hive.openBox<QuizEntryModel>('quiz_entries');
   runApp(MyApp());
 }
 
@@ -20,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'マルチメディア登録',
+      title: 'マルチメディア＋クイズ登録',
       home: RegisterPage(),
     );
   }
@@ -40,38 +43,39 @@ class _RegisterPageState extends State<RegisterPage> {
   String? _videoName;
   AudioPlayer? _audioPlayer;
 
-  Box<EntryModel> get _box => Hive.box<EntryModel>('entries');
+  final _questionController = TextEditingController();
+  final _answerController = TextEditingController();
+
+  Box<EntryModel> get _entryBox => Hive.box<EntryModel>('entries');
+  Box<QuizEntryModel> get _quizBox => Hive.box<QuizEntryModel>('quiz_entries');
 
   Future<void> _pickImage() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null && result.files.single.bytes != null) {
-      setState(() => _imageBytes = result.files.single.bytes!);
-    }
+    final res = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (res != null && res.files.single.bytes != null) setState(() => _imageBytes = res.files.single.bytes!);
   }
 
   Future<void> _pickAudio() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['mp3']);
-    if (result != null && result.files.single.bytes != null) {
+    final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['mp3']);
+    if (res != null && res.files.single.bytes != null) {
       setState(() {
-        _audioBytes = result.files.single.bytes!;
-        _audioName = result.files.single.name;
+        _audioBytes = res.files.single.bytes!;
+        _audioName = res.files.single.name;
       });
     }
   }
 
   Future<void> _pickVideo() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['mp4']);
-    if (result != null && result.files.single.bytes != null) {
+    final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['mp4']);
+    if (res != null && res.files.single.bytes != null) {
       setState(() {
-        _videoBytes = result.files.single.bytes!;
-        _videoName = result.files.single.name;
+        _videoBytes = res.files.single.bytes!;
+        _videoName = res.files.single.name;
       });
     }
   }
 
-  Future<void> _register() async {
+  Future<void> _registerEntry() async {
     if (_textController.text.isEmpty) return;
-
     final entry = EntryModel(
       text: _textController.text,
       image: _imageBytes,
@@ -80,9 +84,7 @@ class _RegisterPageState extends State<RegisterPage> {
       audioName: _audioName,
       videoName: _videoName,
     );
-
-    await _box.add(entry);
-
+    await _entryBox.add(entry);
     setState(() {
       _textController.clear();
       _imageBytes = null;
@@ -90,6 +92,20 @@ class _RegisterPageState extends State<RegisterPage> {
       _videoBytes = null;
       _audioName = null;
       _videoName = null;
+    });
+  }
+
+  Future<void> _registerQuizEntry() async {
+    if (_questionController.text.isEmpty || _answerController.text.isEmpty) return;
+    final entry = QuizEntryModel(
+      question: _questionController.text,
+      answer: _answerController.text,
+      number: _quizBox.length + 1,
+    );
+    await _quizBox.add(entry);
+    setState(() {
+      _questionController.clear();
+      _answerController.clear();
     });
   }
 
@@ -105,175 +121,116 @@ class _RegisterPageState extends State<RegisterPage> {
   void _playVideo(BuildContext context, Uint8List bytes) {
     final blob = html.Blob([bytes], 'video/mp4');
     final url = html.Url.createObjectUrlFromBlob(blob);
-
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => VideoPlayerPage(videoUrl: url),
-      ),
+      MaterialPageRoute(builder: (_) => VideoPlayerPage(videoUrl: url)),
     );
   }
 
-  Widget _buildEntry(EntryModel item, int index) {
+  Widget _buildEntryTile(EntryModel item, int i) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ListTile(
-          title: Text(item.text),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (item.image != null) ...[
-                SizedBox(height: 8),
-                Image.memory(item.image!, height: 100),
-              ],
-              if (item.audio != null) ...[
-                SizedBox(height: 8),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.play_arrow),
-                  label: Text("音楽再生: ${item.audioName ?? ''}"),
-                  onPressed: () => _playAudio(item.audio!),
-                ),
-              ],
-              if (item.video != null) ...[
-                SizedBox(height: 8),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.movie),
-                  label: Text("動画再生: ${item.videoName ?? ''}"),
-                  onPressed: () => _playVideo(context, item.video!),
-                ),
-              ],
-              SizedBox(height: 8),
-              ElevatedButton.icon(
-                icon: Icon(Icons.delete),
-                label: Text("削除"),
-                onPressed: () async {
-                  await item.delete();
-                  setState(() {});
-                },
-              ),
-            ],
-          ),
-        ),
+      child: ListTile(
+        title: Text(item.text),
+        subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (item.image != null) Image.memory(item.image!, height: 80),
+          if (item.audio != null)
+            ElevatedButton.icon(icon: Icon(Icons.play_arrow), label: Text("音声: ${item.audioName}"), onPressed: () => _playAudio(item.audio!)),
+          if (item.video != null)
+            ElevatedButton.icon(icon: Icon(Icons.movie), label: Text("動画: ${item.videoName}"), onPressed: () => _playVideo(context, item.video!)),
+        ]),
+        trailing: IconButton(icon: Icon(Icons.delete), onPressed: () => item.delete().then((_) => setState(() {}))),
       ),
     );
   }
 
   @override
   void dispose() {
-    _audioPlayer?.dispose();
     _textController.dispose();
+    _questionController.dispose();
+    _answerController.dispose();
+    _audioPlayer?.dispose();
     Hive.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final entries = _entryBox.values.toList();
+    final quizEntries = _quizBox.values.toList();
     return Scaffold(
-      appBar: AppBar(title: Text('マルチメディア登録')),
-      body: ValueListenableBuilder(
-        valueListenable: _box.listenable(),
-        builder: (context, Box<EntryModel> box, _) {
-          final entries = box.values.toList();
-          return SingleChildScrollView(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _textController,
-                  decoration: InputDecoration(labelText: '文字を入力'),
-                ),
-                SizedBox(height: 12),
+      appBar: AppBar(title: Text('マルチメディア＋クイズ登録')),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(children: [
 
-                ElevatedButton(onPressed: _pickImage, child: Text('画像を選択')),
-                if (_imageBytes != null) ...[
-                  SizedBox(height: 8),
-                  Image.memory(_imageBytes!, height: 100),
-                ],
-                SizedBox(height: 12),
+          // マルチメディア登録セクション
+          TextField(controller: _textController, decoration: InputDecoration(labelText: '本文テキスト')),
+          SizedBox(height: 6),
+          ElevatedButton(onPressed: _pickImage, child: Text('画像選択')),
+          if (_imageBytes != null) Image.memory(_imageBytes!, height: 80),
+          ElevatedButton(onPressed: _pickAudio, child: Text('音声選択（MP3）')),
+          if (_audioName != null) Text(_audioName!),
+          ElevatedButton(onPressed: _pickVideo, child: Text('動画選択（MP4）')),
+          if (_videoName != null) Text(_videoName!),
+          ElevatedButton(onPressed: _registerEntry, child: Text('登録（マルチメディア）')),
+          Divider(),
 
-                ElevatedButton(onPressed: _pickAudio, child: Text('音楽（MP3）を選択')),
-                if (_audioName != null) ...[
-                  SizedBox(height: 8),
-                  Text('選択された音楽: $_audioName'),
-                ],
-                SizedBox(height: 12),
+          // 登録済マルチメディア一覧
+          Text('登録済マルチメディア一覧', style: TextStyle(fontWeight: FontWeight.bold)),
+          ...entries.asMap().entries.map((e) => _buildEntryTile(e.value, e.key)).toList(),
+          Divider(),
 
-                ElevatedButton(onPressed: _pickVideo, child: Text('動画（MP4）を選択')),
-                if (_videoName != null) ...[
-                  SizedBox(height: 8),
-                  Text('選択された動画: $_videoName'),
-                ],
-                SizedBox(height: 20),
+          // 見出しクイズ登録セクション
+          Text('クイズ 問題・答え 登録', style: TextStyle(fontWeight: FontWeight.bold)),
+          TextField(controller: _questionController, decoration: InputDecoration(labelText: '問題文')),
+          SizedBox(height: 6),
+          TextField(controller: _answerController, decoration: InputDecoration(labelText: '答え')),
+          SizedBox(height: 6),
+          ElevatedButton(onPressed: _registerQuizEntry, child: Text('登録（クイズ）')),
+          Divider(),
 
-                ElevatedButton(onPressed: _register, child: Text('登録')),
-                SizedBox(height: 20),
+          // 登録済クイズ一覧
+          Text('登録済クイズ一覧', style: TextStyle(fontWeight: FontWeight.bold)),
+          ...quizEntries.map((q) => ListTile(leading: Text('Q${q.number}'), title: Text(q.question), subtitle: Text('答え: ${q.answer}'))).toList(),
+          Divider(),
 
-                Divider(),
-                Text("登録一覧", style: TextStyle(fontWeight: FontWeight.bold)),
-                SizedBox(height: 10),
-                ...entries.asMap().entries.map((e) => _buildEntry(e.value, e.key)).toList(),
-
-                SizedBox(height: 30),
-                // クイズページへの遷移ボタン追加
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => QuizPage()),
-                    );
-                  },
-                  child: Text('クイズを始める'),
-                ),
-              ],
-            ),
-          );
-        },
+          // クイズ開始ボタン
+          ElevatedButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QuizPage())),
+            child: Text('クイズを始める'),
+          ),
+        ]),
       ),
     );
   }
 }
 
+// VideoPlayerPage は既存コードをそのまま使えます
 class VideoPlayerPage extends StatefulWidget {
   final String videoUrl;
-
   const VideoPlayerPage({required this.videoUrl});
 
   @override
   State<VideoPlayerPage> createState() => _VideoPlayerPageState();
 }
-
 class _VideoPlayerPageState extends State<VideoPlayerPage> {
   late VideoPlayerController _controller;
-
   @override
   void initState() {
     super.initState();
     _controller = VideoPlayerController.network(widget.videoUrl)
-      ..initialize().then((_) {
-        setState(() {});
-        _controller.play();
-      });
+      ..initialize().then((_) { setState(() {}); _controller.play(); });
   }
-
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+  void dispose() { _controller.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('動画再生')),
       body: Center(
         child: _controller.value.isInitialized
-            ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(_controller),
-              )
-            : CircularProgressIndicator(),
+          ? AspectRatio(aspectRatio: _controller.value.aspectRatio, child: VideoPlayer(_controller))
+          : CircularProgressIndicator()
       ),
     );
   }
