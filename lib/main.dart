@@ -158,7 +158,7 @@ class _RegisterPageState extends State<RegisterPage> {
     final entries = _entryBox.values.toList();
     final quizEntries = _quizBox.values.toList();
     return Scaffold(
-      appBar: AppBar(title: Text('マルチメディア＋クイズ登録')),
+      appBar: AppBar(title: Text('クイズ・保存')),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(children: [
@@ -168,11 +168,11 @@ class _RegisterPageState extends State<RegisterPage> {
           SizedBox(height: 6),
           ElevatedButton(onPressed: _pickImage, child: Text('画像選択')),
           if (_imageBytes != null) Image.memory(_imageBytes!, height: 80),
-          ElevatedButton(onPressed: _pickAudio, child: Text('音声選択（MP3）')),
+          ElevatedButton(onPressed: _pickAudio, child: Text('音声選択')),
           if (_audioName != null) Text(_audioName!),
-          ElevatedButton(onPressed: _pickVideo, child: Text('動画選択（MP4）')),
+          ElevatedButton(onPressed: _pickVideo, child: Text('動画選択')),
           if (_videoName != null) Text(_videoName!),
-          ElevatedButton(onPressed: _registerEntry, child: Text('登録（マルチメディア）')),
+          ElevatedButton(onPressed: _registerEntry, child: Text('登録')),
           Divider(),
 
           // 登録済マルチメディア一覧
