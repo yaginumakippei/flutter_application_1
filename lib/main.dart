@@ -143,6 +143,23 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  Widget _buildQuizTile(QuizEntryModel item) {
+    return Card(
+      child: ListTile(
+        leading: Text('Q${item.number}'),
+        title: Text(item.question),
+        subtitle: Text('答え: ${item.answer}'),
+        trailing: IconButton(
+          icon: Icon(Icons.delete, color: Colors.red),
+          onPressed: () async {
+            await item.delete();
+            setState(() {});
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _textController.dispose();
@@ -162,8 +179,6 @@ class _RegisterPageState extends State<RegisterPage> {
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(children: [
-
-          // マルチメディア登録セクション
           TextField(controller: _textController, decoration: InputDecoration(labelText: '本文テキスト')),
           SizedBox(height: 6),
           ElevatedButton(onPressed: _pickImage, child: Text('画像選択')),
@@ -175,12 +190,10 @@ class _RegisterPageState extends State<RegisterPage> {
           ElevatedButton(onPressed: _registerEntry, child: Text('登録')),
           Divider(),
 
-          // 登録済マルチメディア一覧
-          Text('登録済マルチメディア一覧', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('登録済一覧', style: TextStyle(fontWeight: FontWeight.bold)),
           ...entries.asMap().entries.map((e) => _buildEntryTile(e.value, e.key)).toList(),
           Divider(),
 
-          // 見出しクイズ登録セクション
           Text('クイズ 問題・答え 登録', style: TextStyle(fontWeight: FontWeight.bold)),
           TextField(controller: _questionController, decoration: InputDecoration(labelText: '問題文')),
           SizedBox(height: 6),
@@ -189,12 +202,10 @@ class _RegisterPageState extends State<RegisterPage> {
           ElevatedButton(onPressed: _registerQuizEntry, child: Text('登録（クイズ）')),
           Divider(),
 
-          // 登録済クイズ一覧
           Text('登録済クイズ一覧', style: TextStyle(fontWeight: FontWeight.bold)),
-          ...quizEntries.map((q) => ListTile(leading: Text('Q${q.number}'), title: Text(q.question), subtitle: Text('答え: ${q.answer}'))).toList(),
+          ...quizEntries.map((q) => _buildQuizTile(q)).toList(),
           Divider(),
 
-          // クイズ開始ボタン
           ElevatedButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QuizPage())),
             child: Text('クイズを始める'),
@@ -205,7 +216,6 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 }
 
-// VideoPlayerPage は既存コードをそのまま使えます
 class VideoPlayerPage extends StatefulWidget {
   final String videoUrl;
   const VideoPlayerPage({required this.videoUrl});
