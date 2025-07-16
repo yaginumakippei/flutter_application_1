@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'マルチメディア＋クイズ登録',
+      title: '登録＋クイズ登録',
       home: RegisterPage(),
     );
   }
